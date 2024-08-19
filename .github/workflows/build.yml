@@ -1,0 +1,50 @@
+name: Build Project
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Read configuration
+      id: config
+      run: |
+        echo "PROJECT_NAME=$(jq -r '.projectName' build-config.json)" >> $GITHUB_OUTPUT
+        echo "DOTNET_VERSION=$(jq -r '.dotnetVersion' build-config.json)" >> $GITHUB_OUTPUT
+        echo "PACKAGE_NAME=$(jq -r '.packageName' build-config.json)" >> $GITHUB_OUTPUT
+        echo "PACKAGE_VERSION=$(jq -r '.packageVersion' build-config.json)" >> $GITHUB_OUTPUT
+        echo "BUILD_CONFIGURATION=$(jq -r '.buildConfiguration' build-config.json)" >> $GITHUB_OUTPUT
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ steps.config.outputs.DOTNET_VERSION }}
+
+    - name: Create project
+      run: dotnet new classlib -n ${{ steps.config.outputs.PROJECT_NAME }}
+
+    - name: Add package
+      run: |
+        cd ${{ steps.config.outputs.PROJECT_NAME }}
+        dotnet add package ${{ steps.config.outputs.PACKAGE_NAME }} --version ${{ steps.config.outputs.PACKAGE_VERSION }}
+
+    - name: Copy source file
+      run: cp ${{ steps.config.outputs.PROJECT_NAME }}.cs ${{ steps.config.outputs.PROJECT_NAME }}/
+
+    - name: Build
+      run: |
+        cd ${{ steps.config.outputs.PROJECT_NAME }}
+        dotnet build --configuration ${{ steps.config.outputs.BUILD_CONFIGURATION }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.config.outputs.PROJECT_NAME }}-build
+        path: ${{ steps.config.outputs.PROJECT_NAME }}/bin/${{ steps.config.outputs.BUILD_CONFIGURATION }}/
