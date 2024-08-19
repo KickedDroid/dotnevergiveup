@@ -1,0 +1,7 @@
+{
+  "projectName": "MyProject",
+  "dotnetVersion": "7.0",
+  "packageName": "Microsoft.AspNetCore.Components",
+  "packageVersion": "7.0.0",
+  "buildConfiguration": "Release"
+}
